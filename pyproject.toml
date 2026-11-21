@@ -7,7 +7,11 @@ authors = [
     { name = "Ido Dekel", email = "ido302@gmail.com" }
 ]
 requires-python = ">=3.12"
-dependencies = []
+dependencies = [
+    "jupyter>=1.1.1",
+    "matplotlib>=3.11.2",
+    "pyside6>=6.12.0",
+]
 
 [project.scripts]
 git-ex-4 = "git_ex_4:main"
