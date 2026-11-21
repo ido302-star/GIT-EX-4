@@ -1,19 +1,26 @@
 import sys
 from pathlib import Path
 
+import openpyxl
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
+    QAbstractItemView,
     QApplication,
+    QFileDialog,
     QHBoxLayout,
     QHeaderView,
     QLabel,
     QMainWindow,
+    QMessageBox,
     QPushButton,
     QSpinBox,
     QTableWidget,
+    QTableWidgetItem,
     QVBoxLayout,
     QWidget,
 )
+
+TABLE_MIN_ROWS = 50
 
 STYLE_FILE = Path(__file__).with_name("style.qss")
 
@@ -48,11 +55,12 @@ class MainWindow(QMainWindow):
         main_layout.addLayout(top_layout)
 
         # Grades table
-        self.table = QTableWidget(50, 3)
+        self.table = QTableWidget(TABLE_MIN_ROWS, 3)
         self.table.setHorizontalHeaderLabels(["ID", "Original Grades", "Corrected Grades"])
         self.table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
         self.table.verticalHeader().setVisible(False)
         self.table.setAlternatingRowColors(True)
+        self.table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
         main_layout.addWidget(self.table)
 
         # Bottom bar: bonus, update, about
@@ -60,6 +68,7 @@ class MainWindow(QMainWindow):
         bonus_label = QLabel("Bonus Points")
         self.bonus_spinbox = QSpinBox()
         self.bonus_spinbox.setRange(0, 100)
+        self.bonus_spinbox.setKeyboardTracking(False)
         bonus_label.setBuddy(self.bonus_spinbox)
 
         self.update_button = QPushButton("Update File")
@@ -75,15 +84,66 @@ class MainWindow(QMainWindow):
 
     def _connect_signals(self):
         self.load_button.clicked.connect(self.load_file)
-        self.bonus_spinbox.valueChanged.connect(self.bonus_changed)
+        self.bonus_spinbox.editingFinished.connect(self.bonus_changed)
         self.update_button.clicked.connect(self.update_file)
         self.about_button.clicked.connect(self.show_about)
 
     def load_file(self):
-        pass
+        file_path, _ = QFileDialog.getOpenFileName(
+            self,
+            "Choose Students File",
+            "",
+            "Excel Files (*.xlsx);;All Files (*)",
+        )
+        if not file_path:
+            return  # user cancelled
 
-    def bonus_changed(self, value):
-        pass
+        try:
+            workbook = openpyxl.load_workbook(file_path, data_only=True)
+        except Exception as error:
+            QMessageBox.critical(self, "Error", f"Could not open the file:\n{error}")
+            return
+
+        self.selected_file = file_path
+        self.student_ids = []
+        self.original_grades = []
+
+        sheet = workbook.active
+        # Column A = ID, column B = Grade; row 1 is the header
+        for student_id, grade in sheet.iter_rows(min_row=2, max_col=2, values_only=True):
+            if student_id is None:
+                continue  # skip empty rows
+            self.student_ids.append(student_id)
+            self.original_grades.append(grade)
+        workbook.close()
+
+        self.corrected_grades = self.original_grades.copy()
+        self.update_table()
+
+    def update_table(self):
+        self.table.clearContents()
+        self.table.setRowCount(max(TABLE_MIN_ROWS, len(self.student_ids)))
+
+        columns = (self.student_ids, self.original_grades, self.corrected_grades)
+        for col, values in enumerate(columns):
+            for row, value in enumerate(values):
+                item = QTableWidgetItem("" if value is None else str(value))
+                item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
+                self.table.setItem(row, col, item)
+
+    def bonus_changed(self):
+        if not self.selected_file:
+            return  # no file loaded yet
+
+        bonus = self.bonus_spinbox.value()
+        self.corrected_grades = []
+        for grade in self.original_grades:
+            if grade is None:
+                self.corrected_grades.append(None)  # keep missing grades empty
+            else:
+                self.corrected_grades.append(min(grade + bonus, 100))
+
+        self.update_table()
 
     def update_file(self):
         pass
