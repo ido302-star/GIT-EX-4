@@ -1,3 +1,5 @@
+import os
+import subprocess
 import sys
 from pathlib import Path
 
@@ -24,6 +26,10 @@ TABLE_MIN_ROWS = 50
 
 STYLE_FILE = Path(__file__).with_name("style.qss")
 
+APP_NAME = "Student Grades Manager"
+AUTHOR = "Ido Dekel"
+REPO_URL = "https://github.com/ido302-star/GIT-EX-4"
+
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -34,7 +40,7 @@ class MainWindow(QMainWindow):
         self.corrected_grades = []
         self.selected_file = ''
 
-        self.setWindowTitle("Student Grades Manager")
+        self.setWindowTitle(APP_NAME)
         self.resize(800, 600)
 
         self._build_ui()
@@ -146,10 +152,69 @@ class MainWindow(QMainWindow):
         self.update_table()
 
     def update_file(self):
-        pass
+        if not self.selected_file:
+            QMessageBox.information(self, "No File", "Please load a students file first.")
+            return
+
+        try:
+            # Load without data_only so any formulas elsewhere in the file are kept
+            workbook = openpyxl.load_workbook(self.selected_file)
+            sheet = workbook.active
+
+            # Walk the rows exactly like load_file does (skip header and empty rows),
+            # so each corrected grade goes back to the row it came from.
+            # Only the value of the grade cell (column B) changes; its formatting stays.
+            grades = iter(self.corrected_grades)
+            for id_cell, grade_cell in sheet.iter_rows(min_row=2, max_col=2):
+                if id_cell.value is None:
+                    continue
+                grade_cell.value = next(grades)
+
+            workbook.save(self.selected_file)
+            workbook.close()
+        except PermissionError:
+            QMessageBox.warning(
+                self,
+                "File Is Open",
+                "The file could not be saved because it is open in another program "
+                "(probably Excel).\n\nPlease close it and click \"Update File\" again.",
+            )
+            return
+        except Exception as error:
+            QMessageBox.critical(self, "Error", f"Could not update the file:\n{error}")
+            return
+
+        self.open_with_default_program(self.selected_file)
+
+    @staticmethod
+    def open_with_default_program(file_path):
+        # Each OS has its own way to open a file with its default program:
+        # - Windows: os.startfile() asks Windows to open the file, like double-clicking it.
+        # - macOS:   the built-in "open" command opens the file with its default app.
+        # - Linux:   "xdg-open" opens the file with the desktop's default app.
+        if sys.platform.startswith("win"):
+            os.startfile(file_path)
+        elif sys.platform == "darwin":
+            subprocess.Popen(["open", file_path])
+        else:
+            subprocess.Popen(["xdg-open", file_path])
 
     def show_about(self):
-        pass
+        about_box = QMessageBox(self)
+        about_box.setWindowTitle(f"About {APP_NAME}")
+        about_box.setIcon(QMessageBox.Icon.Information)
+        # Rich text lets us use HTML, including a clickable <a> link
+        about_box.setTextFormat(Qt.TextFormat.RichText)
+        about_box.setText(
+            f"<h3>{APP_NAME}</h3>"
+            "<p>Loads a students grades file (Excel), adds bonus points to every grade "
+            "(capped at 100), and saves the corrected grades back to the file.</p>"
+            f"<p>Created by: <b>{AUTHOR}</b></p>"
+            f'<p>GitHub: <a href="{REPO_URL}">{REPO_URL}</a></p>'
+        )
+        # Make the link clickable and open it in the default web browser
+        about_box.setTextInteractionFlags(Qt.TextInteractionFlag.TextBrowserInteraction)
+        about_box.exec()
 
 
 def main():
