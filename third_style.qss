@@ -1,0 +1,98 @@
+/* ---------- Base ---------- */
+QMainWindow, QWidget {
+    background-color: #f1f5f9;
+    color: #334155;
+    font-family: "Segoe UI", Arial, sans-serif;
+    font-size: 14px;
+}
+
+QLabel#titleLabel {
+    background: transparent;
+    font-size: 20px;
+    font-weight: 700;
+    color: #0f172a;
+}
+
+/* ---------- Buttons ---------- */
+QPushButton {
+    background-color: #0d9488;
+    color: #ffffff;
+    border: none;
+    border-radius: 8px;
+    padding: 8px 20px;
+    font-weight: 600;
+    min-width: 90px;
+}
+
+QPushButton:hover {
+    background-color: #0f766e;
+}
+
+QPushButton:pressed {
+    background-color: #115e59;
+}
+
+QPushButton#secondaryButton {
+    background-color: #ffffff;
+    color: #0d9488;
+    border: 1px solid #0d9488;
+}
+
+QPushButton#secondaryButton:hover {
+    background-color: #f0fdfa;
+}
+
+QPushButton#secondaryButton:pressed {
+    background-color: #ccfbf1;
+}
+
+/* ---------- Graph card ---------- */
+QFrame#graphCard {
+    background-color: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+}
+
+QFrame#graphCard QWidget {
+    background-color: #ffffff;
+}
+
+/* ---------- Matplotlib navigation toolbar ---------- */
+QToolBar {
+    background-color: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 4px;
+    spacing: 4px;
+}
+
+QToolBar QToolButton {
+    background: transparent;
+    border: none;
+    border-radius: 6px;
+    padding: 4px;
+}
+
+QToolBar QToolButton:hover {
+    background-color: #ccfbf1;
+}
+
+QToolBar QToolButton:checked,
+QToolBar QToolButton:pressed {
+    background-color: #99f6e4;
+}
+
+QToolBar QLabel {
+    background: transparent;
+    color: #64748b;
+    font-size: 12px;
+}
+
+/* ---------- Tooltips ---------- */
+QToolTip {
+    background-color: #0f172a;
+    color: #ffffff;
+    border: none;
+    border-radius: 4px;
+    padding: 4px 8px;
+}
